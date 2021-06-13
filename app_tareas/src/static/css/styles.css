@@ -13,6 +13,7 @@ body {
     border-radius: 5px;
     box-shadow: 0 0 1em #797982;
     transition: all .2s ease-in-out;
+    color: #343a40;
 }
 
 .item:hover {
