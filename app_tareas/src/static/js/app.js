@@ -14,7 +14,7 @@ function App() {
             </Row>
             <Row>
                 <Col className="text-center">
-                    <span>©2021 - Poli</span>
+                    <span>©2021 - PoliTecnico Grancolombiano</span>
                 </Col>
             </Row>
         </Container>
