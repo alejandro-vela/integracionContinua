@@ -14,7 +14,7 @@ function App() {
             </Row>
             <Row>
                 <Col className="text-center">
-                    <span>2021</span>
+                    <span>©2021 - Poli</span>
                 </Col>
             </Row>
         </Container>
