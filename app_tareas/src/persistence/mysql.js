@@ -1,6 +1,7 @@
 const waitPort = require('wait-port');
 const fs = require('fs');
 const mysql = require('mysql');
+const Sentry = require("@sentry/node");
 
 const {
     MYSQL_HOST: HOST,
@@ -17,27 +18,42 @@ async function init() {
     const password = PASSWORD ? PASSWORD : '123456';
     const database = DB ? DB: 'tareas';
 
-    await waitPort({ host, port : 3306, timeout: 15000 });
-
-    pool = mysql.createPool({
-        connectionLimit: 5,
-        host,
-        user,
-        password,
-        database,
+    const transaction = Sentry.startTransaction({
+        op: "Conexion",
+        name: "Conexion BD",
     });
 
-    return new Promise((acc, rej) => {
-        pool.query(
-            'CREATE TABLE IF NOT EXISTS todo_items (id varchar(36), name varchar(255), completed boolean)',
-            err => {
-                if (err) return rej(err);
+    try {
+        pool = mysql.createPool({
+            connectionLimit: 5,
+            host,
+            user,
+            password,
+            database,
+        });
 
-                console.log(`Connected to mysql db at host ${HOST}`);
-                acc();
-            },
-        );
-    });
+        if(await waitPort({ host, port : 3306, timeout: 10000 })){
+            return new Promise((acc, rej) => {
+                pool.query(
+                    'CREATE TABLE IF NOT EXISTS todo_items (id varchar(36), name varchar(255), completed boolean)',
+                    err => {
+                        if (err) return rej(err);
+
+                        console.log(`Connected to mysql db at host ${host}`);
+                        Sentry.captureMessage(`Connected to mysql db at host ${host}`);
+                        acc();
+                    },
+                );
+            });
+        }else{
+            throw "Error en conexion a la bd";
+        }
+    } catch (e) {
+        Sentry.captureException(e);
+    } finally {
+        transaction.finish();
+    }
+
 }
 
 async function teardown() {
@@ -52,7 +68,10 @@ async function teardown() {
 async function getItems() {
     return new Promise((acc, rej) => {
         pool.query('SELECT * FROM todo_items', (err, rows) => {
-            if (err) return rej(err);
+            
+            if (err){
+                return rej(err);
+            } 
             acc(
                 rows.map(item =>
                     Object.assign({}, item, {
@@ -67,6 +86,7 @@ async function getItems() {
 async function getItem(id) {
     return new Promise((acc, rej) => {
         pool.query('SELECT * FROM todo_items WHERE id=?', [id], (err, rows) => {
+            
             if (err) return rej(err);
             acc(
                 rows.map(item =>
@@ -109,6 +129,7 @@ async function removeItem(id) {
     return new Promise((acc, rej) => {
         pool.query('DELETE FROM todo_items WHERE id = ?', [id], err => {
             if (err) return rej(err);
+            Sentry.captureMessage(`remove item: ${id}`);
             acc();
         });
     });

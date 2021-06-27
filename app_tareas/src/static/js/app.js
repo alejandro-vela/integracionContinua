@@ -12,6 +12,11 @@ function App() {
                     <TodoListCard />
                 </Col>
             </Row>
+            <Row>
+                <Col className="text-center">
+                    <span>©2021 - PoliTecnico Grancolombiano</span>
+                </Col>
+            </Row>
         </Container>
     );
 }
